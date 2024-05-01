@@ -28,41 +28,74 @@ def not_gate():
     return [[0, 1], [1, 0]]
 
 
+def cnot_gate():
+    return [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]
+
+
 def swap_gate():
     return [[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]
+
+
+import math
+
+
+def hadamard_gate():
+    sqrt2inv = 1 / math.sqrt(2)
+    return [[sqrt2inv, sqrt2inv], [sqrt2inv, -sqrt2inv]]
 
 
 def not_on(i, bits):
     return kron(kron(identitiy(i), not_gate()), identitiy(bits - i - 1))
 
 
-class ClassicalState:
+def hadamard_on(i, bits):
+    return kron(kron(identitiy(i), hadamard_gate()), identitiy(bits - i - 1))
+
+
+import random
+
+
+class QuantumState:
     def __init__(self, bits):
         self.bits = bits
-        self.value = [0] * (2**bits)
-        self.value[0] = 1
+        self.values = [0 + 0j] * (2**bits)
+        self.values[0] = 1 + 0j
+
+    def is_unitary(self):
+        return math.isclose(abs(sum(map(lambda v: v * v, self.values))), 1)
 
     def apply(self, gate):
         res = []
         for row in gate:
             v = 0
-            for i in range(len(self.value)):
-                v += row[i] * self.value[i]
+            for i in range(len(self.values)):
+                v += row[i] * self.values[i]
             res.append(v)
-        self.value = res
+        self.values = res
 
-    def to_bits(self):
-        s = bin(self.value.index(1))[2:]
-        while len(s) < self.bits:
-            s = "0" + s
-        return s
+    def observe(self):
+        dice = random.random()
+        accum = 0
+        for i, p in enumerate(self.values):
+            accum += abs(p * p)
+            if dice < accum:
+                s = bin(i)[2:]
+                while len(s) < self.bits:
+                    s = "0" + s
+                return s
+        raise Exception()
 
 
-state = ClassicalState(3)
+state = QuantumState(2)
+print(state.is_unitary())
+state.apply(hadamard_on(0, 2))
+print(state.is_unitary())
+state.apply(cnot_gate())
+print(state.is_unitary())
 
-state.apply(not_on(2, 3))
-state.apply(not_on(1, 3))
-state.apply(not_on(0, 3))
-state.apply(not_on(1, 3))
-
-print(state.to_bits())
+samples = 1000
+states = {}
+for _ in range(samples):
+    v = state.observe()
+    states[v] = states.get(v, 0) + 1
+print(states)
