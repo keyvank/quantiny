@@ -52,6 +52,7 @@ def hadamard_on(i, bits):
     return kron(kron(identitiy(i), hadamard_gate()), identitiy(bits - i - 1))
 
 
+import math
 import random
 
 
@@ -67,10 +68,7 @@ class QuantumState:
     def apply(self, gate):
         res = []
         for row in gate:
-            v = 0
-            for i in range(len(self.values)):
-                v += row[i] * self.values[i]
-            res.append(v)
+            res.append(sum([row[i] * self.values[i] for i in range(len(self.values))]))
         self.values = res
 
     def observe(self):
@@ -85,7 +83,19 @@ class QuantumState:
                 return s
         raise Exception()
 
+    def sample(self, times=1000):
+        states = {}
+        for _ in range(times):
+            v = self.observe()
+            if v not in states:
+                states[v] = 0
+            states[v] += 1
+        return states
 
+
+s = QuantumState(3)
+print(s.sample())
+exit(0)
 state = QuantumState(2)
 print(state.is_unitary())
 state.apply(hadamard_on(0, 2))
@@ -97,5 +107,7 @@ samples = 1000
 states = {}
 for _ in range(samples):
     v = state.observe()
-    states[v] = states.get(v, 0) + 1
+    if v not in states:
+        states[v] = 0
+    states[v] += 1
 print(states)
